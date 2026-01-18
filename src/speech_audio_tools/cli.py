@@ -59,8 +59,8 @@ def tts_speakers(
         typer.echo(s)
 
 
-@tts_app.command("synth")
-def tts_synth(
+@tts_app.command("synthesize")
+def tts_synthesize(
     lang: str = typer.Option(..., "--lang", "-l"),
     input_file: Path = typer.Option(..., "--input", "-i", exists=True, dir_okay=False),
     output_file: Optional[Path] = typer.Option(None, "--output", "-o", dir_okay=False),

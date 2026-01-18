@@ -12,7 +12,7 @@ uv run sat --help
 ## CLI overview
 
 - `sat tts speakers` — list voices for engine/lang
-- `sat tts synth` — single text file to mp3
+- `sat tts synthesize` — single text file to mp3
 - `sat audio combine` — combine raw Q/A into section mp3
 - `sat audio speed` — change speed (atempo) and optional pitch
 - `sat audio split-silence` / `split-duration` — split audio into chunks
@@ -66,7 +66,7 @@ Quick API sanity check; optional because it can incur costs.
 ```bash
 echo "Hello from sat" > /tmp/sat_sample.txt
 uv run sat tts speakers --lang en-US --engine neural --env-file .env | head -n 3
-uv run sat tts synth --lang en-US -i /tmp/sat_sample.txt -o /tmp/sat_sample.mp3 --engine openai-tts-1 --env-file .env
+uv run sat tts synthesize --lang en-US -i /tmp/sat_sample.txt -o /tmp/sat_sample.mp3 --engine openai-tts-1 --env-file .env
 ```
 
 ### Transcribe (STT)
