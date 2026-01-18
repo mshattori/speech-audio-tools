@@ -1,0 +1,28 @@
+[project]
+name = "speech-audio-tools"
+version = "0.1.0"
+description = "CLI utilities for TTS generation and audio post-processing"
+readme = "README.md"
+authors = [
+    { name = "mshattori", email = "mshattori@gmail.com" }
+]
+requires-python = ">=3.9"
+dependencies = [
+    "typer>=0.12.5",
+    "pydub>=0.25.1",
+    "mutagen>=1.47.0",
+    "boto3>=1.34.7",
+    "openai>=1.99.6",
+    "numpy>=2.0.2",
+    "python-dotenv>=1.0.1",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8.3.3"]
+
+[project.scripts]
+sat = "speech_audio_tools.cli:app"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
