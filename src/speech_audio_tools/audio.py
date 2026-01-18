@@ -7,7 +7,9 @@ from pydub import AudioSegment
 from collections import OrderedDict
 
 PARENT_DIR = os.path.dirname(os.path.realpath(__file__))
-NUMBER_AUDIO_DIR = os.path.join(PARENT_DIR, ".number_audio")
+# Pre-bundled number audio lives in-package under number_audio (1-100).
+NUMBER_AUDIO_DIR = os.path.join(PARENT_DIR, "number_audio")
+NUMBER_AUDIO_MAX_BUILTIN = 100
 
 
 def speed_change(sound, speed=1.0):
@@ -77,10 +79,16 @@ def _make_number_audio(number):
     from .tts import SimpleTTS
 
     lang = "en-US"
-    number = str(number)
-    filename = os.path.join(NUMBER_AUDIO_DIR, number + ".mp3")
-    if not os.path.exists(filename):
-        SimpleTTS(lang).make_audio_file(number, filename)
+    number = int(number)
+    if number < 1:
+        raise ValueError("Number audio is defined for positive integers.")
+
+    os.makedirs(NUMBER_AUDIO_DIR, exist_ok=True)
+    filename = os.path.join(NUMBER_AUDIO_DIR, f"{number}.mp3")
+
+    if not os.path.exists(filename) or os.path.getsize(filename) == 0:
+        # Ship 1-100 with the package; synthesize anything missing (including >100) on the fly.
+        SimpleTTS(lang).make_audio_file(str(number), filename)
     return filename
 
 
@@ -206,4 +214,3 @@ class SignatureList:
                         break
                     hasher.update(buf)
         return hasher.hexdigest()
-
