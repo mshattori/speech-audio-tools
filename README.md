@@ -21,6 +21,11 @@ uv run sat --help
 - `sat audio add-number` — prepend spoken numbers to mp3 list
 - `sat audio tag-album` — set title/album tags for directory
 - `sat audio beep` — generate reference beep tone
+- `sat transcribe openai` — transcribe a local audio file with OpenAI Whisper
+- `sat transcribe aws-upload` — upload a file to S3
+- `sat transcribe aws-list` — list objects under a prefix
+- `sat transcribe aws-transcribe` — run AWS Transcribe on an S3 object and fetch text
+- `sat transcribe aws-delete` — delete an object from S3
 
 ## Notes
 
@@ -28,37 +33,35 @@ uv run sat --help
 - AWS credentials (.env) needed for Polly; OPENAI_API_KEY for OpenAI TTS.
 - For local tool-style install: `uv tool install .` then run `sat ...`.
 
----
+## Testing & Development
 
-# テストと開発 (Testing & Development)
+### Prerequisites
 
-## 前提
+- FFmpeg is on `PATH`.
+- `uv` is available.
+- For online TTS checks, put AWS/OPENAI keys in `.env`.
 
-- ffmpeg が PATH にあること。
-- uv が使えること。
-- オンライン TTS テストを行う場合は `.env` に AWS/OPENAI のキーを設定。
+### Offline E2E Smoke (recommended)
 
-## オフライン E2E スモークテスト（推奨）
-
-コード／CLI だけで完結し、外部 API なしで sat を一通り通します。
+Runs the CLI end to end without external APIs.
 
 ```bash
-# プロジェクトルートで実行
-uv sync --extra test        # pytest をインストール
+# Run at project root
+uv sync --extra test        # installs pytest
 uv run pytest tests/test_sat_offline.py -q
 ```
 
-テスト内容（簡易）：
-- `sat audio beep` で mp3 生成
-- `sat audio trim` で先頭カット
-- `sat audio speed` で atempo 変換
-- `sat audio join` で複数ファイル連結
-- `sat audio split-duration` で分割
-- `sat audio trim-silence` で FFmpeg の silenceremove 実行
+What it covers:
+- `sat audio beep` generates an mp3.
+- `sat audio trim` removes leading audio.
+- `sat audio speed` applies `atempo`.
+- `sat audio join` concatenates multiple files.
+- `sat audio split-duration` splits by duration.
+- `sat audio trim-silence` runs FFmpeg `silenceremove`.
 
-## オンライン TTS スモーク（オプション）
+### Online TTS Smoke (optional)
 
-実際に音声 API を叩く簡易チェック。環境に課金リスクがあるため任意。
+Quick API sanity check; optional because it can incur costs.
 
 ```bash
 echo "Hello from sat" > /tmp/sat_sample.txt
@@ -66,13 +69,35 @@ uv run sat tts speakers --lang en-US --engine neural --env-file .env | head -n 3
 uv run sat tts synth --lang en-US -i /tmp/sat_sample.txt -o /tmp/sat_sample.mp3 --engine openai-tts-1 --env-file .env
 ```
 
-## クリーニング
+### Transcribe (STT)
+
+OpenAI (local file):
+
+```bash
+uv run sat transcribe openai sample.m4a --language ja --env-file .env
+```
+
+AWS Transcribe (S3 object):
+
+```bash
+# upload
+uv run sat transcribe aws-upload --bucket my-bucket --prefix audio/ sample.m4a --env-file .env
+
+# run job and fetch transcript
+uv run sat transcribe aws-transcribe --bucket my-bucket --prefix audio --languages ja-JP,en-US --media-format m4a sample.m4a --env-file .env
+```
+
+Notes:
+- Defaults: OpenAI model `gpt-4o-mini-transcribe`, AWS region `ap-northeast-1`.
+- `--output` writes transcript to a file; otherwise prints to stdout.
+
+### Cleanup
 
 ```bash
 rm -rf /tmp/sat_sample.txt /tmp/sat_sample.mp3
 ```
 
-## トラブルシュート
+### Troubleshooting
 
-- FFmpeg がない: `brew install ffmpeg`
-- キャッシュ権限で uv が失敗: `UV_CACHE_DIR` を書き込み可能な場所に設定するか、必要に応じて権限付きで再実行。
+- Missing FFmpeg: `brew install ffmpeg`
+- `uv` fails due to cache permissions: set `UV_CACHE_DIR` to a writable path or rerun with appropriate permissions.
