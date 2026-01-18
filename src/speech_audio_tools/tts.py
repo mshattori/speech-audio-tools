@@ -146,7 +146,7 @@ class SimpleTTS(object):
         if parent_dir and not os.path.exists(parent_dir):
             os.makedirs(parent_dir)
 
-        text_chunks = _split_text_into_chunks(text, POLLY_MAX_CHARS)
+        text_chunks = _split_text_into_chunks(text, POLLY_MAX_CHARS) or [text]
 
         combined_audio = AudioSegment.empty()
         for i, chunk in enumerate(text_chunks):
@@ -155,6 +155,12 @@ class SimpleTTS(object):
             )
             audio_segment = self.engine.text_to_audio(chunk, self.lang, self.speaker, speed)
             combined_audio += audio_segment
+
+        if gain != 0.0:
+            combined_audio = combined_audio.apply_gain(gain)
+
+        combined_audio.export(output_filename, format="mp3")
+        return output_filename
 
 def list_speakers(lang, engine):
     tts_engine = init_tts_engine(engine)
