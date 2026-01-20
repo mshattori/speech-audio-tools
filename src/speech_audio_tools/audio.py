@@ -102,6 +102,7 @@ def make_section_mp3_files(
     add_number_audio=False,
     section_unit=10,
     artist="Homebrew",
+    album=None,
 ):
     """Make section mp3 files by combining raw Q & A mp3 files made by TTS."""
     signatures = SignatureList(output_directory)
@@ -147,8 +148,8 @@ def make_section_mp3_files(
         section_audio = _combine_audio_list(section_audio_segments)
         if gain != 0.0:
             section_audio = section_audio.apply_gain(gain)
-        album = os.path.basename(output_directory).replace("_", " ").replace("-", " ").title()
-        tags = {"title": "{}-{} {}".format(start, end, album), "album": album, "artist": artist}
+        album_name = album or os.path.basename(output_directory).replace("_", " ").replace("-", " ").title()
+        tags = {"title": "{}-{} {}".format(start, end, album_name), "album": album_name, "artist": artist}
         section_audio.export(section_filename, format="mp3", tags=tags, id3v2_version="3")
         print('Created "{}"'.format(section_filename))
 
