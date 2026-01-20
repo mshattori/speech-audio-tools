@@ -161,6 +161,56 @@ def make_section_mp3_files(
     signatures.save()
 
 
+def make_single_mp3_file(
+    input_directory,
+    output_directory,
+    title,
+    album=None,
+    speed=(1.0, 1.0),
+    gain=0.0,
+    repeat_question=True,
+    pause_duration=500,
+    add_number_audio=False,
+    artist="Homebrew",
+):
+    """Combine all QA pairs into a single MP3."""
+    numbers = _collect_ordinal_numbers(input_directory)
+    if not numbers:
+        print("No QA audio found in " + input_directory)
+        return 1
+
+    segments = []
+    if add_number_audio:
+        os.makedirs(NUMBER_AUDIO_DIR, exist_ok=True)
+        number_filename = _make_number_audio(int(numbers[0]))
+        number_audio = AudioSegment.from_file(number_filename)
+        pause = AudioSegment.silent(duration=500)
+        segments.append(number_audio + pause)
+
+    for number in numbers:
+        file_Q = _find_question_file(input_directory, number)
+        file_A = _find_answer_file(input_directory, number)
+        if not (file_Q and file_A):
+            print("WARN: Corresponding files not found for " + number)
+            continue
+        segments.append(_combine_QA(file_Q, file_A, speed, repeat_question, pause_duration))
+
+    if not segments:
+        print("No segments to combine; aborting single-file export")
+        return 1
+
+    audio = _combine_audio_list(segments)
+    if gain != 0.0:
+        audio = audio.apply_gain(gain)
+
+    album_name = album or os.path.basename(output_directory).replace("_", " ").replace("-", " ").title()
+    out_filename = os.path.join(output_directory, f"{title}.mp3")
+    tags = {"title": title, "album": album_name, "artist": artist}
+    audio.export(out_filename, format="mp3", tags=tags, id3v2_version="3")
+    print('Created "{}"'.format(out_filename))
+    return 0
+
+
 def join_files(filenames, output_filename, title, album, artist, silence):
     silent_segment = None
     if silence > 0:
