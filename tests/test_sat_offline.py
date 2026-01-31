@@ -103,3 +103,67 @@ def test_trim_silence_runs(tmp_path: Path):
     if proc.returncode != 0:
         pytest.skip("ffmpeg silenceremove failed in this environment")
     assert trimmed.exists() and trimmed.stat().st_size > 0
+
+
+def _read_tags(path: Path):
+    try:
+        from mutagen import File
+    except ModuleNotFoundError:
+        pytest.skip("mutagen not installed")
+
+    audio = File(path, easy=True)
+    if audio is None:
+        return {}
+    return {k: v[0] for k, v in audio.tags.items()} if audio.tags else {}
+
+
+def test_tag_album_single_file_in_place(tmp_path: Path):
+    src = tmp_path / "tone.mp3"
+    run_cli("audio", "beep", "--output", str(src), "--duration", "0.2")
+
+    run_cli("audio", "tag-album", str(src), "--album", "Test Album", "--title", "Custom Title", "--artist", "Tester")
+
+    tags = _read_tags(src)
+    assert tags.get("album") == "Test Album"
+    assert tags.get("title") == "Custom Title"
+    assert tags.get("artist") == "Tester"
+
+
+def test_tag_album_single_file_copy_then_tag(tmp_path: Path):
+    src = tmp_path / "tone.mp3"
+    run_cli("audio", "beep", "--output", str(src), "--duration", "0.2")
+
+    out_dir = tmp_path / "out"
+    run_cli("audio", "tag-album", str(src), "--album", "Copied Album", "--output-dir", str(out_dir))
+
+    dest = out_dir / src.name
+    assert dest.exists() and dest.stat().st_size > 0
+    assert src.exists(), "source file should remain"
+    tags = _read_tags(dest)
+    assert tags.get("album") == "Copied Album"
+    assert tags.get("title") == "tone"  # from filename
+
+
+def test_tag_album_directory_in_place(tmp_path: Path):
+    input_dir = tmp_path / "album"
+    input_dir.mkdir()
+    for name in ("a", "b"):
+        run_cli("audio", "beep", "--output", str(input_dir / f"{name}.mp3"), "--duration", "0.15")
+
+    run_cli("audio", "tag-album", str(input_dir), "--album", "Dir Album")
+
+    for name in ("a", "b"):
+        path = input_dir / f"{name}.mp3"
+        tags = _read_tags(path)
+        assert tags.get("album") == "Dir Album"
+        assert tags.get("title") == name
+
+
+def test_tag_album_directory_title_error(tmp_path: Path):
+    input_dir = tmp_path / "album"
+    input_dir.mkdir()
+    run_cli("audio", "beep", "--output", str(input_dir / "a.mp3"), "--duration", "0.1")
+
+    proc = run_cli("audio", "tag-album", str(input_dir), "--album", "X", "--title", "Nope", check=False)
+    assert proc.returncode != 0
+    assert b"--title is only supported when tagging a single file" in proc.stderr

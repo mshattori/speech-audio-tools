@@ -282,11 +282,13 @@ def audio_add_number(
 
 @audio_app.command("tag-album")
 def audio_tag_album(
-    dirname: Path = typer.Argument(..., exists=True, file_okay=False),
+    input_path: Path = typer.Argument(..., exists=True, file_okay=True),
     album: str = typer.Option(..., "--album", "-a"),
-    output_dir: Path = typer.Option(Path("output"), "--output-dir", "-o"),
+    output_dir: Optional[Path] = typer.Option(None, "--output-dir", "-o"),
+    title: Optional[str] = typer.Option(None, "--title", help="Only valid for single-file input"),
+    artist: str = typer.Option("Homebrew", "--artist", help="Artist tag to apply"),
 ):
-    tag_album(str(dirname), album, str(output_dir))
+    tag_album(str(input_path), album=album, output_dir=str(output_dir) if output_dir else None, title=title, artist=artist)
 
 
 @audio_app.command("beep")
